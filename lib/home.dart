@@ -28,10 +28,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   var gameOverScaleController;
 
   var crosshairScaleControllerDuration;
-  var xTapPos = 0.0;
-  var yTapPos = 0.0;
-  var enemyLength = 20.0;
-  var gameOver = false;
 
   @override
   void initState() {
@@ -90,8 +86,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       vsync: this,
       duration: Duration(milliseconds: 400),
     )..addListener(() {
-      setState(() {});
-    });
+        setState(() {});
+      });
   }
 
   @override
@@ -104,7 +100,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     if (cursorOpacityController.status == AnimationStatus.completed) {
       cursorOpacityController.reverse();
     } else if (cursorOpacityController.status == AnimationStatus.dismissed &&
-        !gameOver) {
+        !gs.gameOver) {
       cursorOpacityController.forward();
     }
     // animating crosshair
@@ -116,7 +112,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         crosshairScaleController.reverse();
         break;
       case AnimationStatus.dismissed:
-        if (!gameOver) {
+        if (!gs.gameOver) {
           crosshairScaleController.forward();
           randomWidth = randomLoc.nextDouble();
           randomHeight = randomLoc.nextDouble();
@@ -126,27 +122,27 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
     _onTapBackground(TapDownDetails details) {
       setState(() {
-        if (!gameOver) {
-          print('tapped main');
+        print('tapped background');
+        if (!gs.gameOver) {
           randomWidth = randomLoc.nextDouble();
           randomHeight = randomLoc.nextDouble();
           cursorErrorController.forward();
 //          gs.taps = gs.taps % 2 == 0 ? gs.taps / 2 : (gs.taps - 1) / 2;
           --gs.taps;
-          if (gameOver) {
+          if (gs.gameOver) {
             replayIconOpacityController.forward();
           }
 
-          xTapPos = details.globalPosition.dx;
-          yTapPos = details.globalPosition.dy;
-          enemyLength += 50;
+          gs.xTapPos = details.globalPosition.dx;
+          gs.yTapPos = details.globalPosition.dy;
+          gs.enemyLength += 50.0;
         }
       });
     }
 
     _onTapCrosshair() {
       setState(() {
-        if (gameOver) {
+        if (gs.gameOver) {
           replayIconRotateController.forward(from: 0.0);
         } else {
           crosshairScaleControllerDuration *= 0.97;
@@ -163,6 +159,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     }
 
     _onTapReplay() {
+      print('tapped replay');
       setState(() {
         gameOverScaleController.reverse();
         crosshairScaleControllerDuration = Duration(milliseconds: 800);
@@ -172,19 +169,25 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         );
         replayIconRotateController.forward(from: 0.0);
         replayIconOpacityController.reverse();
-        enemyLength = 20;
-        gameOver = false;
-        xTapPos = 0.0;
-        yTapPos = 0.0;
+        gs.enemyLength = 20;
+        gs.gameOver = false;
+        gs.xTapPos = 0.0;
+        gs.yTapPos = 0.0;
         gs.taps = 0;
       });
     }
 
-    _onTapEnemy() {
-      // todo add animation
+    _onTapGameOverOverlay() {
+      print('tapped gameover overlay');
       setState(() {
-        print('YEEEEhaawwwwww');
-        gameOver = true;
+        replayIconRotateController.forward(from: 0.0);
+      });
+    }
+
+    _onTapEnemy() {
+      print('tapped enemy');
+      setState(() {
+        gs.gameOver = true;
         gameOverScaleController.forward();
         replayIconOpacityController.forward();
       });
@@ -195,8 +198,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         behavior: HitTestBehavior.translucent,
         onTapDown: _onTapBackground,
         child: Container(
-//          padding: EdgeInsets.symmetric(horizontal: 20),
-          // add a controller or something here maybe
           color: red1,
           width: width,
           height: height,
@@ -204,13 +205,17 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             alignment: Alignment.center,
             children: <Widget>[
               Opacity(
-                opacity: 0.2,
+                opacity: 0.1,
                 child: Container(
                   width: width * 0.8 + 20,
                   height: height * 0.8 + 20,
-                  decoration: BoxDecoration(
-                    color: trans,
-                    border: Border.all(color: red12, width: 4),
+                  color: trans,
+                  child: Transform.rotate(
+                    angle: math.pi,
+                    child: Icon(
+                      Icons.adb,
+                      size: 1000,
+                    ),
                   ),
                 ),
               ),
@@ -229,12 +234,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 ),
               ),
               Positioned(
-                top: yTapPos - enemyLength / 2,
-                left: xTapPos - enemyLength / 2,
+                top: gs.yTapPos - gs.enemyLength / 2,
+                left: gs.xTapPos - gs.enemyLength / 2,
                 child: GestureDetector(
                   onTap: _onTapEnemy,
                   child: Offstage(
-                    offstage: xTapPos == 0,
+                    offstage: gs.xTapPos == 0,
                     child: Opacity(
                       opacity: 0.6,
                       child: Container(
@@ -244,10 +249,46 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 //                        child: Image(
 //                          image: AssetImage('images/android.png'),
 //                        ),
-                        child: Icon(
-                          Icons.adb,
-                          size: enemyLength,
-                          color: red3,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: <Widget>[
+                            Icon(
+                              Icons.adb,
+                              size: gs.enemyLength,
+                              color: red3,
+                            ),
+                            Icon(
+                              Icons.adb,
+                              size: gs.enemyLength-gs.enemyLength*0.01,
+                              color: red2,
+                            ),
+                            Positioned(
+                              left: 0,
+                              child: GestureDetector(
+                                onTap: () {
+                                  print('This hit test is ignored');
+                                },
+                                child: Container(
+                                  color: trans,
+                                  width: gs.enemyLength * 0.2,
+                                  height: gs.enemyLength,
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              right: 0,
+                              child: GestureDetector(
+                                onTap: () {
+                                  print('This hit test is ignored');
+                                },
+                                child: Container(
+                                  color: trans,
+                                  width: gs.enemyLength * 0.2,
+                                  height: gs.enemyLength,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -255,58 +296,75 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 ),
               ),
               Positioned(
-                top: yTapPos - 5,
-                left: xTapPos - 5,
-                child: Offstage(
-                  offstage: false,
-                  child: Opacity(
-                    opacity: 0.5,
-                    child: Transform.scale(
-                      scale: 200 * gameOverScaleController.value,
-                      child: Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          color: red3,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              IgnorePointer(
-                ignoring: !gameOver,
+                top: gs.yTapPos - 1500 * gameOverScaleController.value/2,
+                left: gs.xTapPos - 1500 * gameOverScaleController.value/2,
                 child: GestureDetector(
                   behavior: HitTestBehavior.translucent,
-                  onTap: _onTapReplay,
+                  onTap: _onTapGameOverOverlay,
                   child: Opacity(
-                    opacity: replayIconOpacityController.value,
-                    child: Transform.rotate(
-                      angle: -2 * math.pi * replayIconRotateAnimation.value,
-                      child: Icon(Icons.replay, color: yellow, size: 120),
+                    opacity: 0.5,
+                    child: Container( // todo check if values work with tab
+                      width: 1500 * gameOverScaleController.value,
+                      height: 1500 * gameOverScaleController.value,
+                      decoration: BoxDecoration(
+                        color: red3,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
                 ),
               ),
               Positioned(
                 top: MediaQuery.of(context).size.height * 0.14,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                child: Column(
                   children: <Widget>[
-                    Text(
-                      gs.taps == 0 ? '' : gs.taps.toString(),
-                      style: kLabelStyle,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Text(
+                          gs.taps.toString(),
+                          style: gs.gameOver
+                              ? kLabelStyle.copyWith(
+                                  fontWeight: FontWeight.w400,
+                                )
+                              : kLabelStyle,
+                        ),
+                        Opacity(
+                          opacity: cursorOpacityController.value,
+                          child: Container(
+                            width: 2,
+                            height: 80,
+                            color: yellow,
+                          ),
+                        ),
+                        SizedBox(width: 0 + 40 * cursorErrorController.value),
+                      ],
                     ),
-                    Opacity(
-                      opacity: cursorOpacityController.value,
-                      child: Container(
-                        width: 2,
-                        height: 80,
-                        color: yellow,
+                    SizedBox(height: 25),
+                    Offstage(
+                      offstage: !gs.gameOver,
+                      child: Text(
+                        'Game Over!',
+                        style: kLabelStyle.copyWith(
+                          fontWeight: FontWeight.w400,
+                        ),
                       ),
                     ),
-                    SizedBox(width: 0 + 40 * cursorErrorController.value),
+                    SizedBox(height: 50),
+                    IgnorePointer(
+                      ignoring: !gs.gameOver,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onTap: _onTapReplay,
+                        child: Opacity(
+                          opacity: replayIconOpacityController.value,
+                          child: Transform.rotate(
+                            angle: -2 * math.pi * replayIconRotateAnimation.value,
+                            child: Icon(Icons.replay, color: yellow, size: 80),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -325,6 +383,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     cursorErrorController.dispose();
     crosshairScaleController.dispose();
     crosshairRotateController.dispose();
+    gameOverScaleController.dispose();
     super.dispose();
   }
 }
