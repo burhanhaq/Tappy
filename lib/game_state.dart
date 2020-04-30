@@ -4,7 +4,7 @@ class GameState with ChangeNotifier {
   int _taps = 0;
   var _xTapPos = 0.0;
   var _yTapPos = 0.0;
-  var _enemyLength = 20.0;
+  double _enemyLength = 20.0;
   var _gameOver = false;
 
   get taps => _taps;

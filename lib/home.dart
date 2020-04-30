@@ -25,7 +25,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   var replayIconRotateAnimation;
   var crosshairRotateController;
   var crosshairScaleController;
-  var gameOverScaleController;
+  var gameOverOverlayScaleController;
 
   var crosshairScaleControllerDuration;
 
@@ -82,7 +82,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     )..addListener(() {
         setState(() {});
       });
-    gameOverScaleController = AnimationController(
+    gameOverOverlayScaleController = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 400),
     )..addListener(() {
@@ -97,7 +97,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     var width = MediaQuery.of(context).size.width;
     var height = MediaQuery.of(context).size.height;
 
-    if (cursorOpacityController.status == AnimationStatus.completed) {
+    if (cursorOpacityController.status == AnimationStatus.completed
+    && !gs.gameOver) {
       cursorOpacityController.reverse();
     } else if (cursorOpacityController.status == AnimationStatus.dismissed &&
         !gs.gameOver) {
@@ -120,6 +121,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         break;
     }
 
+    if (gs.gameOver &&
+        (gameOverOverlayScaleController.status ==
+        AnimationStatus.completed)) {
+      replayIconOpacityController.forward();
+    }
+
     _onTapBackground(TapDownDetails details) {
       setState(() {
         print('tapped background');
@@ -127,7 +134,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           randomWidth = randomLoc.nextDouble();
           randomHeight = randomLoc.nextDouble();
           cursorErrorController.forward();
-//          gs.taps = gs.taps % 2 == 0 ? gs.taps / 2 : (gs.taps - 1) / 2;
           --gs.taps;
           if (gs.gameOver) {
             replayIconOpacityController.forward();
@@ -135,7 +141,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
           gs.xTapPos = details.globalPosition.dx;
           gs.yTapPos = details.globalPosition.dy;
-          gs.enemyLength += 50.0;
+          gs.enemyLength += height * 0.1;
+          print(width);print(height);
         }
       });
     }
@@ -161,7 +168,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     _onTapReplay() {
       print('tapped replay');
       setState(() {
-        gameOverScaleController.reverse();
+        gameOverOverlayScaleController.reverse();
         crosshairScaleControllerDuration = Duration(milliseconds: 800);
         crosshairScaleController = AnimationController(
           vsync: this,
@@ -188,8 +195,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       print('tapped enemy');
       setState(() {
         gs.gameOver = true;
-        gameOverScaleController.forward();
-        replayIconOpacityController.forward();
+        gameOverOverlayScaleController.forward();
+//        replayIconOpacityController.forward();
       });
     }
 
@@ -296,16 +303,16 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 ),
               ),
               Positioned(
-                top: gs.yTapPos - 1500 * gameOverScaleController.value/2,
-                left: gs.xTapPos - 1500 * gameOverScaleController.value/2,
+                top: gs.yTapPos - 1500 * gameOverOverlayScaleController.value/2,
+                left: gs.xTapPos - 1500 * gameOverOverlayScaleController.value/2,
                 child: GestureDetector(
                   behavior: HitTestBehavior.translucent,
                   onTap: _onTapGameOverOverlay,
                   child: Opacity(
                     opacity: 0.5,
-                    child: Container( // todo check if values work with tab
-                      width: 1500 * gameOverScaleController.value,
-                      height: 1500 * gameOverScaleController.value,
+                    child: Container(
+                      width: 1500 * gameOverOverlayScaleController.value,
+                      height: 1500 * gameOverOverlayScaleController.value,
                       decoration: BoxDecoration(
                         color: red3,
                         shape: BoxShape.circle,
@@ -383,7 +390,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     cursorErrorController.dispose();
     crosshairScaleController.dispose();
     crosshairRotateController.dispose();
-    gameOverScaleController.dispose();
+    gameOverOverlayScaleController.dispose();
     super.dispose();
   }
 }
